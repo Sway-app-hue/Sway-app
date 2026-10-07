@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0b0c" />
+  <title>Sway — Social</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root{
+      --bg:#08090a;--panel:#101112;--panel2:#151617;--line:#252729;
+      --text:#f5f5f5;--muted:#a2a5aa;--soft:#777b81;--accent:#7c5cff;
+      --accent2:#a78bfa;--danger:#ff4d67;--green:#28d17c;
+      --shadow:0 20px 70px rgba(0,0,0,.42);--radius:22px;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    body{min-height:100vh}
+    button,input,textarea{font:inherit}
+    button{border:0;color:inherit;background:none;cursor:pointer}
+    a{color:inherit;text-decoration:none}
+    .app{min-height:100vh}
+    .topbar{position:sticky;top:0;z-index:30;height:68px;border-bottom:1px solid var(--line);background:rgba(8,9,10,.88);backdrop-filter:blur(20px);display:flex;align-items:center}
+    .topbar-inner{width:min(1120px,100%);margin:auto;padding:0 18px;display:flex;align-items:center;gap:14px}
+    .logo{font-weight:900;font-size:24px;letter-spacing:-1.2px}
+    .logo span{color:var(--accent2)}
+    .search{margin-left:auto;margin-right:auto;width:min(360px,42vw);position:relative}
+    .search input{width:100%;height:42px;border:1px solid var(--line);border-radius:14px;background:#131516;color:var(--text);padding:0 14px 0 42px;outline:none}
+    .search input:focus{border-color:#4c3c8f;box-shadow:0 0 0 3px rgba(124,92,255,.12)}
+    .search svg{position:absolute;left:14px;top:12px;color:var(--muted)}
+    .iconbtn{width:42px;height:42px;border:1px solid var(--line);border-radius:14px;display:grid;place-items:center;background:#111314}
+    .iconbtn:hover{background:#191b1d}
+    .avatar{width:40px;height:40px;border-radius:50%;object-fit:cover;background:linear-gradient(135deg,#7c5cff,#f0abfc);display:grid;place-items:center;font-weight:800}
+    .layout{width:min(1120px,100%);margin:auto;display:grid;grid-template-columns:1fr 310px;gap:34px;padding:26px 18px 100px}
+    .feed{min-width:0;max-width:650px;margin:auto;width:100%}
+    .side{position:sticky;top:92px;height:max-content}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+    .stories{display:flex;gap:16px;overflow:auto;padding:14px 4px 20px;scrollbar-width:none}
+    .stories::-webkit-scrollbar{display:none}
+    .story{min-width:68px;text-align:center;font-size:12px;color:var(--muted)}
+    .story-ring{width:60px;height:60px;padding:2px;border-radius:50%;margin:0 auto 7px;background:linear-gradient(135deg,#ff8a00,#ff2d55,#7c5cff)}
+    .story-ring>div{width:100%;height:100%;border-radius:50%;border:3px solid var(--bg);overflow:hidden;background:#222}
+    .story-ring img{width:100%;height:100%;object-fit:cover}
+    .composer{padding:16px;margin-bottom:18px}
+    .composer-row{display:flex;gap:12px;align-items:center}
+    .composer input{flex:1;height:44px;background:#17191a;border:1px solid var(--line);border-radius:15px;padding:0 14px;color:var(--text);outline:none}
+    .primary{background:var(--accent);padding:11px 17px;border-radius:13px;font-weight:750}
+    .primary:hover{filter:brightness(1.08)}
+    .post{overflow:hidden;margin-bottom:18px}
+    .post-head{display:flex;align-items:center;gap:11px;padding:15px}
+    .post-meta{min-width:0;flex:1}
+    .post-name{font-weight:750}
+    .post-time{font-size:12px;color:var(--muted);margin-top:2px}
+    .more{color:var(--muted);font-size:22px}
+    .post-image{width:100%;display:block;aspect-ratio:1/1;object-fit:cover;background:#18191a}
+    .post-body{padding:12px 15px 15px}
+    .actions{display:flex;align-items:center;gap:7px;margin-bottom:9px}
+    .action{width:40px;height:40px;border-radius:12px;display:grid;place-items:center}
+    .action:hover{background:#191b1d}
+    .action.liked{color:var(--danger)}
+    .save{margin-left:auto}
+    .likes{font-weight:750;margin-bottom:7px}
+    .caption{line-height:1.45;color:#e7e7e8}
+    .caption b{color:white;margin-right:5px}
+    .comments-link{display:block;color:var(--muted);margin-top:8px;font-size:14px}
+    .comment-box{display:flex;gap:8px;margin-top:12px}
+    .comment-box input{flex:1;min-width:0;background:#17191a;border:1px solid var(--line);border-radius:12px;padding:10px 12px;color:var(--text);outline:none}
+    .smallbtn{background:#1c1e20;border:1px solid var(--line);padding:9px 12px;border-radius:11px}
+    .profile-card{padding:18px}
+    .profile-row{display:flex;align-items:center;gap:13px}
+    .profile-big{width:58px;height:58px;border-radius:50%;object-fit:cover;background:#25272a}
+    .profile-name{font-weight:800}.handle{font-size:13px;color:var(--muted)}
+    .stats{display:flex;justify-content:space-between;margin-top:18px;text-align:center}
+    .stats b{display:block}.stats span{font-size:12px;color:var(--muted)}
+    .side-title{font-size:14px;font-weight:800;margin:24px 4px 12px}
+    .suggestion{display:flex;align-items:center;gap:10px;padding:9px 3px}
+    .suggestion .avatar{width:38px;height:38px}.suggestion-info{flex:1;min-width:0}.suggestion-name{font-weight:700;font-size:14px}.suggestion-sub{font-size:12px;color:var(--muted)}
+    .follow{font-size:13px;color:var(--accent2);font-weight:750}
+    .bottomnav{display:none}
+    .empty{text-align:center;padding:60px 20px;color:var(--muted)}
+    .toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;background:#f4f4f5;color:#111;padding:12px 16px;border-radius:13px;font-weight:700;z-index:100;transition:.25s}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(10px);z-index:80;display:none;align-items:center;justify-content:center;padding:18px}
+    .modal.show{display:flex}
+    .modal-card{width:min(520px,100%);max-height:90vh;overflow:auto;background:#111314;border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow);padding:20px}
+    .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+    .modal-head h2{margin:0;font-size:20px}
+    .field{margin-bottom:13px}.field label{display:block;color:var(--muted);font-size:13px;margin-bottom:7px}
+    .field input,.field textarea{width:100%;border:1px solid var(--line);background:#191b1d;color:var(--text);border-radius:13px;padding:12px;outline:none}
+    .field textarea{min-height:110px;resize:vertical}
+    .row{display:flex;gap:10px}.row>*{flex:1}
+    .tabs{display:flex;border-bottom:1px solid var(--line);margin-bottom:16px}
+    .tab{padding:12px 15px;color:var(--muted)}.tab.active{color:white;border-bottom:2px solid var(--accent)}
+    .profile-page{display:none}.profile-page.show{display:block}
+    .profile-hero{padding:22px;margin-bottom:16px}
+    .profile-hero-top{display:flex;gap:20px;align-items:center}
+    .profile-hero .profile-big{width:92px;height:92px}
+    .profile-actions{margin-left:auto;display:flex;gap:8px}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px}
+    .grid img{width:100%;aspect-ratio:1/1;object-fit:cover;background:#171819}
+    .hidden{display:none!important}
+    .auth{min-height:100vh;display:grid;place-items:center;padding:20px;background:radial-gradient(circle at 50% 10%,#211744 0,#08090a 45%)}
+    .auth-card{width:min(410px,100%);padding:28px;background:#101112;border:1px solid var(--line);border-radius:25px;box-shadow:var(--shadow)}
+    .auth-logo{text-align:center;font-size:34px;font-weight:900;margin-bottom:8px}.auth-sub{text-align:center;color:var(--muted);margin-bottom:25px}
+    .auth-switch{text-align:center;color:var(--muted);font-size:14px;margin-top:18px}.auth-switch button{color:var(--accent2);font-weight:750}
+    .notice{padding:11px 12px;border-radius:12px;background:#17191a;border:1px solid var(--line);font-size:13px;color:var(--muted);margin-bottom:13px}
+    .setup{font-size:12px;color:var(--muted);line-height:1.5;margin-top:12px}
+    @media(max-width:850px){.layout{grid-template-columns:1fr}.side{display:none}.feed{max-width:650px}.bottomnav{position:fixed;bottom:0;left:0;right:0;height:70px;z-index:40;background:rgba(10,11,12,.92);backdrop-filter:blur(20px);border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:center;padding-bottom:env(safe-area-inset-bottom)}.bottomnav button{width:54px;height:50px;display:grid;place-items:center}.bottomnav .new{background:var(--accent);border-radius:15px}.search{width:44px;margin-left:auto;margin-right:0}.search input{display:none}.search svg{left:12px}.topbar-inner{padding:0 12px}.logo{font-size:22px}.layout{padding:16px 10px 90px}.post,.composer{border-radius:18px}}
+    @media(max-width:500px){.post{border-left:0;border-right:0;border-radius:0}.composer{border-left:0;border-right:0;border-radius:0}.layout{padding-left:0;padding-right:0}.stories{padding-left:10px}.post-head,.post-body{padding-left:12px;padding-right:12px}}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<div id="toast" class="toast"></div>
+
+<div id="auth" class="auth hidden">
+  <div class="auth-card">
+    <div class="auth-logo">sway<span>.</span></div>
+    <div class="auth-sub">Dein moderner Social Feed.</div>
+    <div id="authNotice" class="notice hidden"></div>
+    <div class="field"><label>E-Mail</label><input id="email" type="email" autocomplete="email" placeholder="du@example.com"></div>
+    <div class="field"><label>Passwort</label><input id="password" type="password" autocomplete="current-password" placeholder="••••••••"></div>
+    <button id="authBtn" class="primary" style="width:100%">Anmelden</button>
+    <div class="auth-switch"><span id="authSwitchText">Noch kein Konto?</span> <button id="authSwitch">Registrieren</button></div>
+    <div class="setup">Falls du Supabase noch nicht verbunden hast, kannst du die App im Demo-Modus testen. Für echte Accounts brauchst du deine Supabase URL + Anon-Key in den Einstellungen.</div>
+  </div>
+</div>
+
+<div id="app" class="app hidden">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <button class="logo" onclick="goHome()">sway<span>.</span></button>
+      <div class="search">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+        <input id="searchInput" placeholder="Suchen..." oninput="searchUsers(this.value)">
+      </div>
+      <button class="iconbtn" title="Erstellen" onclick="openComposer()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+      <button class="iconbtn" title="Profil" onclick="openProfile(currentUser?.id)">
+        <img id="topAvatar" class="avatar" alt="">
+      </button>
+      <button class="iconbtn" title="Einstellungen" onclick="openSettings()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.7 1.7-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V20h-2.4v-.2a1.7 1.7 0 0 0-1.03-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06-1.7-1.7.06-.06A1.7 1.7 0 0 0 8.46 15a1.7 1.7 0 0 0-1.56-1.03H6v-2.4h.9A1.7 1.7 0 0 0 8.46 10a1.7 1.7 0 0 0-.34-1.88l-.06-.06 1.7-1.7.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1.03-1.56V5h2.4v.2A1.7 1.7 0 0 0 16.16 6.76a1.7 1.7 0 0 0 1.88-.34l.06-.06 1.7 1.7-.06.06A1.7 1.7 0 0 0 19.4 10a1.7 1.7 0 0 0 1.56 1.03H21v2.4h-.04A1.7 1.7 0 0 0 19.4 15Z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="feed">
+      <div id="homeView">
+        <div id="stories" class="stories"></div>
+        <div class="card composer">
+          <div class="composer-row">
+            <img id="composerAvatar" class="avatar" alt="">
+            <input readonly onclick="openComposer()" placeholder="Was möchtest du teilen?">
+            <button class="primary" onclick="openComposer()">Posten</button>
+          </div>
+        </div>
+        <div id="feedList"></div>
+      </div>
+      <div id="profileView" class="profile-page">
+        <div id="profileContent"></div>
+      </div>
+    </section>
+
+    <aside class="side">
+      <div id="myProfileCard" class="card profile-card"></div>
+      <div class="side-title">Vorschläge für dich</div>
+      <div id="suggestions"></div>
+    </aside>
+  </main>
+
+  <nav class="bottomnav">
+    <button onclick="goHome()" title="Home"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V10Z"/></svg></button>
+    <button onclick="focusSearch()" title="Suche"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></button>
+    <button class="new" onclick="openComposer()" title="Neuer Post"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button>
+    <button onclick="openProfile(currentUser?.id)" title="Profil"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c.8-4 3.4-6 8-6s7.2 2 8 6"/></svg></button>
+    <button onclick="openSettings()" title="Mehr"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button>
+  </nav>
+</div>
+
+<div id="composerModal" class="modal">
+  <div class="modal-card">
+    <div class="modal-head"><h2>Neuer Post</h2><button class="iconbtn" onclick="closeModal('composerModal')">×</button></div>
+    <div class="field"><label>Bild-URL (optional)</label><input id="postImage" placeholder="https://..."></div>
+    <div class="field"><label>Text</label><textarea id="postCaption" maxlength="500" placeholder="Was möchtest du teilen?"></textarea></div>
+    <button class="primary" style="width:100%" onclick="createPost()">Post veröffentlichen</button>
+  </div>
+</div>
+
+<div id="settingsModal" class="modal">
+  <div class="modal-card">
+    <div class="modal-head"><h2>Einstellungen</h2><button class="iconbtn" onclick="closeModal('settingsModal')">×</button></div>
+    <div class="notice">Die Werte werden nur in diesem Browser gespeichert. Teile deinen Anon-Key niemals öffentlich als Service-Role-Key.</div>
+    <div class="field"><label>Supabase Project URL</label><input id="sbUrl" placeholder="https://deinprojekt.supabase.co"></div>
+    <div class="field"><label>Supabase Anon / Publishable Key</label><input id="sbKey" placeholder="eyJ..."></div>
+    <div class="row"><button class="primary" onclick="saveSupabase()">Speichern & neu laden</button><button class="smallbtn" onclick="useDemo()">Demo-Modus</button></div>
+    <hr style="border:0;border-top:1px solid var(--line);margin:20px 0">
+    <button class="smallbtn" style="width:100%" onclick="logout()">Abmelden</button>
+  </div>
+</div>
+
+<script>
+const DEMO = [
+  {id:'p1',user_id:'u1',caption:'Willkommen bei sway. ✨ Eine moderne Social-App als Ausgangspunkt für dein eigenes Projekt.',image_url:'https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=1200&q=80',created_at:new Date(Date.now()-3600000).toISOString(),profiles:{id:'u1',username:'alex',display_name:'Alex',avatar_url:'https://i.pravatar.cc/150?img=12'},likes:[{user_id:'demo'}],comments:[]},
+  {id:'p2',user_id:'u2',caption:'Clean UI, schneller Feed und eine Suche, die du später noch weiter ausbauen kannst.',image_url:'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=1200&q=80',created_at:new Date(Date.now()-7200000).toISOString(),profiles:{id:'u2',username:'mila',display_name:'Mila',avatar_url:'https://i.pravatar.cc/150?img=47'},likes:[],comments:[]}
+];
+let sb=null,currentUser=null,currentProfile=null,feed=DEMO,authMode='login',demoMode=true;
+
+const $=id=>document.getElementById(id);
+function toast(msg){$('toast').textContent=msg;$('toast').classList.add('show');setTimeout(()=>$('toast').classList.remove('show'),2400)}
+function avatar(url,name='S'){return url||`https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=7c5cff&color=fff`}
+function esc(s=''){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function timeAgo(d){let s=Math.max(1,(Date.now()-new Date(d))/1000);if(s<60)return 'gerade eben';if(s<3600)return Math.floor(s/60)+' Min.';if(s<86400)return Math.floor(s/3600)+' Std.';return Math.floor(s/86400)+' Tg.'}
+function closeModal(id){$(id).classList.remove('show')}
+function openComposer(){if(!currentUser){toast('Bitte anmelden oder Demo-Modus nutzen.');return}$('composerModal').classList.add('show')}
+function focusSearch(){let i=$('searchInput');i.style.display='block';i.focus();i.scrollIntoView({behavior:'smooth'})}
+
+async function init(){
+  const url=localStorage.getItem('sway_sb_url')||'';
+  const key=localStorage.getItem('sway_sb_key')||'';
+  if(url&&key){try{sb=supabase.createClient(url,key);demoMode=false;const {data}=await sb.auth.getSession();if(data.session) await setUser(data.session.user);else showAuth();sb.auth.onAuthStateChange(async(_,session)=>{if(session)await setUser(session.user);else showAuth()});return}catch(e){console.warn(e);toast('Supabase konnte nicht geladen werden – Demo-Modus.')}}
+  startDemo();
+}
+function showAuth(){$('auth').classList.remove('hidden');$('app').classList.add('hidden')}
+function startDemo(){demoMode=true;currentUser={id:'demo',email:'demo@sway.local'};currentProfile={id:'demo',username:'du',display_name:'Du',avatar_url:avatar('', 'Du')};renderApp()}
+async function setUser(u){
+  currentUser=u; demoMode=false;
+  let p=null;
+  try{const r=await sb.from('profiles').select('*').eq('id',u.id).maybeSingle();p=r.data}catch(e){}
+  currentProfile=p||{id:u.id,username:(u.email||'user').split('@')[0],display_name:(u.email||'User').split('@')[0],avatar_url:''};
+  renderApp();await loadFeed();
+}
+function renderApp(){
+  $('auth').classList.add('hidden');$('app').classList.remove('hidden');
+  $('topAvatar').src=avatar(currentProfile.avatar_url,currentProfile.display_name);
+  $('composerAvatar').src=avatar(currentProfile.avatar_url,currentProfile.display_name);
+  renderSide();renderStories();
+  if(demoMode)renderFeed(feed);
+}
+function renderStories(){
+  const people=[currentProfile,...DEMO.map(x=>x.profiles).filter(Boolean)];
+  $('stories').innerHTML=people.slice(0,7).map((p,i)=>`<div class="story" onclick="openProfile('${p.id}')"><div class="story-ring"><div><img src="${avatar(p.avatar_url,p.display_name)}"></div></div><div>${esc(p.username||p.display_name||'user')}</div></div>`).join('');
+}
+function renderSide(){
+  $('myProfileCard').innerHTML=`<div class="profile-row"><img class="profile-big" src="${avatar(currentProfile.avatar_url,currentProfile.display_name)}"><div><div class="profile-name">${esc(currentProfile.display_name||'Du')}</div><div class="handle">@${esc(currentProfile.username||'user')}</div></div></div><div class="stats"><div><b>${feed.filter(x=>x.user_id===currentUser.id).length}</b><span>Posts</span></div><div><b>0</b><span>Follower</span></div><div><b>0</b><span>Folge ich</span></div></div><button class="smallbtn" style="width:100%;margin-top:16px" onclick="openProfile('${currentUser.id}')">Profil öffnen</button>`;
+  const users=[...new Map(feed.map(p=>[p.profiles?.id,p.profiles]).filter(x=>x[1]&&x[1].id!==currentUser.id)).values()].slice(0,4);
+  $('suggestions').innerHTML=users.map(p=>`<div class="suggestion"><img class="avatar" src="${avatar(p.avatar_url,p.display_name)}"><div class="suggestion-info"><div class="suggestion-name">${esc(p.display_name)}</div><div class="suggestion-sub">@${esc(p.username)}</div></div><button class="follow" onclick="followUser('${p.id}')">Folgen</button></div>`).join('')||'<div style="color:var(--muted);font-size:13px;padding:4px">Noch keine Vorschläge.</div>';
+}
+function renderFeed(posts){
+  $('profileView').classList.remove('show');$('homeView').style.display='block';
+  if(!posts.length){$('feedList').innerHTML='<div class="empty">Noch keine Posts.</div>';return}
+  $('feedList').innerHTML=posts.map(p=>{
+    const profile=p.profiles||{};const likes=p.likes||[];const liked=likes.some(x=>x.user_id===currentUser.id);
+    return `<article class="card post">
+      <div class="post-head"><img class="avatar" src="${avatar(profile.avatar_url,profile.display_name)}" onclick="openProfile('${profile.id||p.user_id}')"><div class="post-meta"><div class="post-name">${esc(profile.display_name||profile.username||'User')}</div><div class="post-time">@${esc(profile.username||'user')} · ${timeAgo(p.created_at)}</div></div><button class="more" onclick="toast('Mehr Optionen kommen hier hin.')">•••</button></div>
+      ${p.image_url?`<img class="post-image" src="${esc(p.image_url)}" alt="Postbild" loading="lazy">`:''}
+      <div class="post-body">
+        <div class="actions">
+          <button class="action ${liked?'liked':''}" onclick="toggleLike('${p.id}',${liked})"><svg width="23" height="23" viewBox="0 0 24 24" fill="${liked?'currentColor':'none'}" stroke="currentColor" stroke-width="2"><path d="M20.8 8.9c0 5.5-8.8 10.2-8.8 10.2S3.2 14.4 3.2 8.9A4.7 4.7 0 0 1 12 6.1a4.7 4.7 0 0 1 8.8 2.8Z"/></svg></button>
+          <button class="action" onclick="focusComment('${p.id}')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.5 9.2 9.2 0 0 1-4-.9L3 21l1.9-4.5A8.4 8.4 0 0 1 3 11.5 8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5Z"/></svg></button>
+          <button class="action" onclick="toast('Teilen-Link kopiert.')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 15 4-4-4-4"/><path d="M16 11H4"/><path d="M20 5v14"/></svg></button>
+          <button class="action save" onclick="toast('Gespeichert.')"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18l-6-3-6 3V4Z"/></svg></button>
+        </div>
+        <div class="likes">${likes.length} ${likes.length===1?'Gefällt mir':'Gefällt mir'}</div>
+        ${p.caption?`<div class="caption"><b>${esc(profile.username||'user')}</b>${esc(p.caption)}</div>`:''}
+        <a class="comments-link" href="javascript:void(0)" onclick="focusComment('${p.id}')">Kommentare ansehen</a>
+        <div class="comment-box"><input id="comment-${p.id}" placeholder="Kommentar schreiben..." onkeydown="if(event.key==='Enter')addComment('${p.id}')"><button class="smallbtn" onclick="addComment('${p.id}')">Senden</button></div>
+      </div>
+    </article>`
+  }).join('');
+}
+function focusComment(id){setTimeout(()=>{const x=$('comment-'+id);if(x){x.focus();x.scrollIntoView({behavior:'smooth',block:'center')}}},80)}
+async function loadFeed(){
+  if(demoMode){renderFeed(feed);return}
+  try{
+    const {data,error}=await sb.from('posts').select('*, profiles(id,username,display_name,avatar_url), likes(user_id), comments(id)').order('created_at',{ascending:false}).limit(50);
+    if(error)throw error;feed=data||[];renderFeed(feed);renderSide();renderStories();
+  }catch(e){console.error(e);toast('Feed konnte nicht geladen werden. Prüfe deine Tabellen/RLS.');renderFeed([])}
+}
+async function toggleLike(postId,liked){
+  if(demoMode){const p=feed.find(x=>x.id===postId);p.likes=p.likes||[];if(liked)p.likes=p.likes.filter(x=>x.user_id!==currentUser.id);else p.likes.push({user_id:currentUser.id});renderFeed(feed);return}
+  try{
+    if(liked) await sb.from('likes').delete().eq('post_id',postId).eq('user_id',currentUser.id);
+    else await sb.from('likes').insert({post_id:postId,user_id:currentUser.id});
+    await loadFeed();
+  }catch(e){toast('Like konnte nicht gespeichert werden.')}
+}
+async function addComment(postId){
+  const input=$('comment-'+postId),text=input?.value.trim();if(!text)return;
+  if(demoMode){toast('Demo-Kommentar hinzugefügt.');input.value='';return}
+  try{const {error}=await sb.from('comments').insert({post_id:postId,user_id:currentUser.id,body:text});if(error)throw error;input.value='';toast('Kommentar hinzugefügt.');await loadFeed()}catch(e){toast('Kommentar konnte nicht gespeichert werden.')}
+}
+async function createPost(){
+  const caption=$('postCaption').value.trim(),image_url=$('postImage').value.trim();
+  if(!caption&&!image_url){toast('Schreib etwas oder füge ein Bild hinzu.');return}
+  if(demoMode){feed.unshift({id:'p'+Date.now(),user_id:'demo',caption,image_url,created_at:new Date().toISOString(),profiles:currentProfile,likes:[],comments:[]});closeModal('composerModal');$('postCaption').value='';$('postImage').value='';renderFeed(feed);renderSide();toast('Post erstellt.');return}
+  try{const {error}=await sb.from('posts').insert({user_id:currentUser.id,caption,image_url:image_url||null});if(error)throw error;closeModal('composerModal');$('postCaption').value='';$('postImage').value='';await loadFeed();toast('Post veröffentlicht.')}catch(e){console.error(e);toast('Post konnte nicht erstellt werden.')}
+}
+async function followUser(id){
+  if(demoMode){toast('Demo: Nutzer gefolgt.');return}
+  try{const {error}=await sb.from('follows').insert({follower_id:currentUser.id,following_id:id});if(error)throw error;toast('Jetzt folgst du diesem Nutzer.')}catch(e){toast('Folgen nicht möglich.')}
+}
+async function openProfile(id){
+  if(!id)return;
+  $('homeView').style.display='none';$('profileView').classList.add('show');
+  let p=feed.find(x=>x.profiles?.id===id)?.profiles;
+  if(id===currentUser.id)p=currentProfile;
+  if(!p&&!demoMode){try{const r=await sb.from('profiles').select('*').eq('id',id).maybeSingle();p=r.data}catch(e){}}
+  p=p||{id,username:'user',display_name:'User',avatar_url:''};currentProfileView=p;
+  const posts=feed.filter(x=>x.user_id===id);
+  $('profileContent').innerHTML=`<div class="card profile-hero"><div class="profile-hero-top"><img class="profile-big" src="${avatar(p.avatar_url,p.display_name)}"><div><h2 style="margin:0 0 4px">${esc(p.display_name)}</h2><div class="handle">@${esc(p.username)}</div></div><div class="profile-actions">${id!==currentUser.id?'<button class="primary" onclick="followUser(\\''+id+'\\')">Folgen</button>':'<button class="smallbtn" onclick="openSettings()">Bearbeiten</button>'}</div></div><div class="stats"><div><b>${posts.length}</b><span>Posts</span></div><div><b>0</b><span>Follower</span></div><div><b>0</b><span>Folge ich</span></div></div></div><div class="grid">${posts.map(x=>x.image_url?`<img src="${esc(x.image_url)}" alt="">`:'<div style="background:#151617"></div>').join('')||'<div class="empty" style="grid-column:1/-1">Noch keine Posts.</div>'}</div>`;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function goHome(){$('profileView').classList.remove('show');$('homeView').style.display='block';window.scrollTo({top:0,behavior:'smooth'})}
+function searchUsers(q){
+  q=q.trim().toLowerCase();
+  if(!q){if($('homeView').style.display!=='none')renderFeed(feed);return}
+  const matches=feed.filter(p=>[p.profiles?.username,p.profiles?.display_name,p.caption].some(v=>String(v||'').toLowerCase().includes(q)));
+  renderFeed(matches);
+}
+function openSettings(){
+  $('sbUrl').value=localStorage.getItem('sway_sb_url')||'';
+  $('sbKey').value=localStorage.getItem('sway_sb_key')||'';
+  $('settingsModal').classList.add('show');
+}
+function saveSupabase(){
+  const u=$('sbUrl').value.trim(),k=$('sbKey').value.trim();
+  if(!u||!k){toast('URL und Key eintragen.');return}
+  localStorage.setItem('sway_sb_url',u);localStorage.setItem('sway_sb_key',k);location.reload();
+}
+function useDemo(){localStorage.removeItem('sway_sb_url');localStorage.removeItem('sway_sb_key');location.reload()}
+async function logout(){
+  if(sb)try{await sb.auth.signOut()}catch(e){}
+  closeModal('settingsModal');currentUser=null;showAuth();
+}
+$('authSwitch').onclick=()=>{authMode=authMode==='login'?'signup':'login';$('authBtn').textContent=authMode==='login'?'Anmelden':'Konto erstellen';$('authSwitchText').textContent=authMode==='login'?'Noch kein Konto?':'Schon ein Konto?';$('authSwitch').textContent=authMode==='login'?'Registrieren':'Anmelden'};
+$('authBtn').onclick=async()=>{
+  const email=$('email').value.trim(),password=$('password').value;
+  if(!email||!password){$('authNotice').textContent='E-Mail und Passwort eingeben.';$('authNotice').classList.remove('hidden');return}
+  if(!sb){startDemo();toast('Demo-Modus gestartet.');return}
+  try{
+    let r=authMode==='login'?await sb.auth.signInWithPassword({email,password}):await sb.auth.signUp({email,password});
+    if(r.error)throw r.error;
+    if(authMode==='signup'&&!r.data.session)toast('Bestätige zuerst deine E-Mail.');
+  }catch(e){$('authNotice').textContent=e.message;$('authNotice').classList.remove('hidden')}
+};
+init();
+</script>
+</body>
+</html>
